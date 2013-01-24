@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== -->
+<!-- Java2C++ -->
+<!-- ====================================================================== -->
+
+<project name="j2c++" basedir="." default="www">
+
+	<property name="build.dir" value="build" />
+
+	<property name="tests.dir" value="tests" />
+
+	<property name="java.src.dir" value="src" />
+
+	<property name="classes.dir" value="${build.dir}/classes" />
+
+	<property name="jars.dir" value="dist" />
+
+	<property name="lib.dir" value="lib" />
+
+
+	<!-- ==================================================================== -->
+	<!-- Compiles/Preverifies the source code -->
+	<!-- ==================================================================== -->
+	<target name="compile" depends="prepare.dirs">
+		<javac source="1.5" srcdir="${java.src.dir}" destdir="${classes.dir}"
+			debug="on" deprecation="off" optimize="off">
+			<classpath>
+				<pathelement
+					path="${lib.dir}/org.eclipse.core.contenttype_3.4.100.v20110423-0524.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.core.jobs_3.5.101.v20120113-1953.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.core.resources_3.7.101.v20120125-1505.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.core.runtime_3.7.0.v20110110.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.equinox.common_3.6.0.v20110523.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.equinox.preferences_3.4.2.v20120111-2020.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.jdt.core_3.7.3.xx-20121221-1400-e37.jar"></pathelement>
+				<pathelement
+					path="${lib.dir}/org.eclipse.jdt.core_3.7.3.xx-20130104-1300-e37.jar"></pathelement>
+				<pathelement path="${lib.dir}/org.eclipse.osgi_3.7.2.v20120110-1415.jar"></pathelement>
+				<pathelement path="${lib.dir}/xbean-nonlocking-classloader-3.7.jar"></pathelement>
+			</classpath>
+		</javac>
+	</target>
+
+	<!-- =================================================================== -->
+	<!-- Creates the manifest -->
+	<!-- =================================================================== -->
+	<target name="manifest" depends="compile">
+		<manifest file="${classes.dir}/META-INF/MANIFEST.MF">
+			<attribute name="Developed-By" value="digitalemil" />
+		</manifest>
+	</target>
+
+	<!-- =================================================================== -->
+	<!-- Creates the jar -->
+	<!-- =================================================================== -->
+	<target name="jar" depends="manifest">
+		<jar destfile="${jars.dir}/j2cplusplus.jar" manifest="${classes.dir}/META-INF/MANIFEST.MF">
+			<fileset dir="${classes.dir}" includes="**" />
+			<fileset dir="${java.src.dir}" includes="**" />
+		</jar>
+		<copy todir="../tatanka/lib"><fileset dir="${jars.dir}"/></copy>
+	</target>
+
+	<!-- =================================================================== -->
+	<!-- Runs -->
+	<!-- =================================================================== -->
+	<target name="j2c++" depends="jar">
+	    <exec executable="helper/run.sh">
+			<arg value="/Users/digitalemil/tmp/c1tatanka"/>
+			<arg value="../tatanka/src/main/java/de/digitalemil/eagle/**.java" />
+			<arg value="../tatanka/src/main/java/de/digitalemil/tatanka/**.java" />	
+		</exec>
+	</target>
+
+	<target name="prepare.dirs">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${classes.dir}/META-INF" />
+		<mkdir dir="${jars.dir}" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${classes.dir}" />
+		<delete dir="${jars.dir}" />
+		<delete dir="${build.dir}" />
+	</target>
+</project>

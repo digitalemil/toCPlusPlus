@@ -50,7 +50,7 @@ public class Method {
 	}
 
 	public void setBody(String b) {
-		body = bodyConversion(b);
+		body = bodyConversion(b).trim();
 	}
 
 	private String replaceDot(String in) {
@@ -64,9 +64,12 @@ public class Method {
 				continue;
 			}
 			boolean isStatic = false;
-			
+			boolean isStringLiteral= false;
 			while (j > 0) {
 				j--;
+				if (ret.charAt(j)=='\"') {
+					isStringLiteral= true;
+				}
 				if (!Character.isJavaIdentifierPart(ret.charAt(j)) && Character.isUpperCase(ret.charAt(j + 1))) {
 					isStatic = true;
 					ret = ret.substring(0, i) + "::" + ret.substring(i + 1);
@@ -76,7 +79,7 @@ public class Method {
 					break;
 			}
 
-			if (!isStatic && i> 0) {
+			if (!isStatic && i> 0 && !isStringLiteral) {
 				ret = ret.substring(0, i) + "->" + ret.substring(i + 1);
 			}
 		} while (i > -1);

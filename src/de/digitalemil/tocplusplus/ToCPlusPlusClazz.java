@@ -5,7 +5,16 @@ import java.util.Arrays;
 public class ToCPlusPlusClazz extends Clazz {
 
 	public final static String STRINGTYPE = "unsigned char*";
-
+	public boolean hasFinalizer= false;
+	
+	public Method addMethod(String name, String retType, int n) {
+		if(name.trim().equals("finalize")) {
+			hasFinalizer= true;
+		}
+		
+		return super.addMethod(name, retType, n);
+	}
+	
 	public void addReference(String ref) {
 		ref = typeConversion(ref);
 		ref = ref.replace("*", "");
@@ -69,20 +78,20 @@ public class ToCPlusPlusClazz extends Clazz {
 		if ("Boolean[]".equals(type) || "boolean[]".equals(type))
 			type = "bool*";
 		boolean isArray = type.contains("[]");
-		//if(isArray)
-			//System.out.println("\nArray: "+type+"\n");
+		// if(isArray)
+		// System.out.println("\nArray: "+type+"\n");
 		type = type.replace("[]", "*");
-		//if(isArray)
-			//System.out.println("\nArray1: "+type+"\n");
-	
+		// if(isArray)
+		// System.out.println("\nArray1: "+type+"\n");
+
 		if (!isPrimitive && !isString)
 			type += "*";
 
-		//if(isArray) 
-			//System.out.println("\nArray2: "+type+" "+isPrimitive+"\n");
-	
-	//	System.out.println(in+" : " + type);
-		
+		// if(isArray)
+		// System.out.println("\nArray2: "+type+" "+isPrimitive+"\n");
+
+		// System.out.println(in+" : " + type);
+
 		return type;
 	}
 
@@ -97,13 +106,15 @@ public class ToCPlusPlusClazz extends Clazz {
 	public String toImpl() {
 		StringBuffer ret = new StringBuffer();
 
-		
 		ret.append("#include \"all.h\"\n");
 		ret.append("\n");
 
 		ret.append("#include \"" + name.toLowerCase() + ".h\"\n\n");
-		ret.append(name + "::~" + name + "() {\n}\n\n");
-
+		ret.append(name + "::~" + name + "() {\n");
+		if(hasFinalizer)
+			ret.append("\tfinalize();\n");
+		ret.append("\n}\n\n");
+	
 		for (int i = 0; i < nmethods; i++) {
 			if (methods[i].isAbstract)
 				continue;
@@ -131,8 +142,35 @@ public class ToCPlusPlusClazz extends Clazz {
 				}
 				ret.append(")");
 			}
-
-			ret.append(" " + methods[i].body + "\n\n\n");
+			methods[i].body = methods[i].body.substring(1,
+					methods[i].body.length() - 2);
+			ret.append(" {\n");
+			if (methods[i].isConstructor) {
+				for (int f = 0; f < fields; f++) {
+					
+					if (!staticFields[f] && !finalFields[f]
+							&& fieldValues[f] == null
+							/*&& (fieldTypes[f].contains("*") || fieldNames[f].contains("*"))*/) {
+						ret.append("\t" + fieldNames[f] + " = 0;\n");
+					}
+					if (!staticFields[f] && !finalFields[f]
+							&& fieldValues[f] != null
+							&& !fieldValues[f].startsWith("{")) {
+						ret.append("\t"
+								+ fieldNames[f]
+								+ ((fieldValues[f] == null) ? ""
+										: (" = " + fieldValues[f])) + ";\n");
+					}
+				}
+			}
+			ret.append(methods[i].body + "\n}\n\n\n");
+		}
+		for (int i = 0; i < fields; i++) {
+			if (staticFields[i]
+					&& (!finalFields[i] || fieldValues[i].startsWith("{"))) {
+				ret.append(fieldTypes[i] + " " + name + "::" + fieldNames[i]
+						+ " = " + fieldValues[i] + ";\n");
+			}
 		}
 		return ret.toString();
 	}
@@ -182,7 +220,8 @@ public class ToCPlusPlusClazz extends Clazz {
 			if (staticFields[i]) {
 				ret.append("static ");
 			}
-			if (finalFields[i] && !fieldValues[i].startsWith("{")) {
+			if (!staticFields[i] && finalFields[i]
+					&& !fieldValues[i].startsWith("{")) {
 				ret.append("const "
 						+ fieldTypes[i]
 						+ " "
@@ -190,13 +229,16 @@ public class ToCPlusPlusClazz extends Clazz {
 						+ ((fieldValues[i] == null) ? ""
 								: (" = " + fieldValues[i])) + ";");
 			} else {
-				if(fieldValues[i]!= null && fieldValues[i].startsWith("{")) {
-					fieldTypes[i]= fieldTypes[i].replace("*", "");
-					fieldNames[i]+="[]";						
+				if (fieldValues[i] != null && fieldValues[i].startsWith("{")) {
+					fieldTypes[i] = fieldTypes[i].replace("*", "");
+					fieldNames[i] += "[]";
 				}
-				ret.append(fieldTypes[i] + " " + fieldNames[i] + ";");
+				if (!finalFields[i] || fieldValues[i].startsWith("{"))
+					ret.append(fieldTypes[i] + " " + fieldNames[i] + ";");
+				else
+					ret.append("const " + fieldTypes[i] + " " + fieldNames[i]
+							+ " = " + fieldValues[i] + ";");
 			}
-
 		}
 		ret.append("\n\n");
 		for (int i = 0; i < nmethods; i++) {
@@ -222,14 +264,6 @@ public class ToCPlusPlusClazz extends Clazz {
 		}
 		ret.append("\tvirtual ~" + name + "();\n};\n\n");
 
-		for (int i = 0; i < fields; i++) {
-			if (staticFields[i] && finalFields[i]
-					&& fieldValues[i].startsWith("{")) {
-				ret.append(fieldTypes[i]+" "
-						+ name+"::"+fieldNames[i]+" = "
-						+ fieldValues[i] + ";\n");
-			}
-		}
 		ret.append("\n#endif\n");
 
 		return ret.toString() + "\n";

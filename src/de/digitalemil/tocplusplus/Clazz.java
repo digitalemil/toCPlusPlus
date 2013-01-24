@@ -47,6 +47,7 @@ public abstract class Clazz {
 	}
 	
 	public void addField(String name, String type, String value, boolean isStatic, boolean isFinal) {
+	//	System.out.println("Adding Field: "+name+" "+type+" "+value);
 		fieldNames[fields]= name;
 		fieldTypes[fields]= typeConversion(type);
 		fieldValues[fields]= valueConversion(value);

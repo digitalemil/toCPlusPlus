@@ -4,6 +4,7 @@ struct timeval OS::tim;
 
 bool OS_paused= false;
 long OS_p= 0L, OS_p1= 0L, OS_correct= 0L;
+unsigned char tmptextbuffer[256];
 
 long OS::currentTimeMillies() {
 	return uncorrectedCurrentTimeMillies()- OS_p - OS_correct;

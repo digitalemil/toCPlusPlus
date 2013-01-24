@@ -58,11 +58,17 @@ public class Main {
 
 		cu.accept(new ASTVisitor() {
 			List superConstrExprs;
-			String replacevalues;
+			String replacevalues, clazzvalues;
 			String[] typerep = new String[1024];
 			String[] searchrep = new String[1024];
 			String[] replacerep = new String[1024];
-			int replacements;
+			
+			String[] clazztyperep = new String[1024];
+			String[] clazzsearchrep = new String[1024];
+			String[] clazzreplacerep = new String[1024];
+			String[] clazzvaluerep = new String[1024];
+			
+			int replacements, clazzreplacements;
 
 			public String replace(String type, String in) {
 				String ret = in;
@@ -75,6 +81,19 @@ public class Main {
 					}
 				}
 				return ret;
+			}
+			
+			public void clazzModification(Clazz clazz) {
+			//	System.out.println("\n\nClazzModification: "+clazzreplacements);
+				for(int i= 0; i< clazzreplacements; i++) {
+					System.out.println(clazztyperep[i]);
+					if(clazztyperep[i].equals("AF")) {
+					//	System.out.println("\n\nClazzModification: "+clazzsearchrep[i]+" "+clazzreplacerep[i]+" "+clazzvaluerep[i]);
+						
+						clazz.addField(clazzsearchrep[i], clazzreplacerep[i],clazzvaluerep[i], false, false);
+					}
+				}
+				
 			}
 
 			public void prepareReplacements(String in) {
@@ -95,14 +114,16 @@ public class Main {
 						searchrep[replacements] = matcher.group().substring(1,
 								matcher.group().length() - 1);
 						searchrep[replacements] = searchrep[replacements]
-								.replace("@EMPTYSTRING", "\"\"").replace('\'', '\"');
-						
+								.replace("@EMPTYSTRING", "\"\"").replace('\'',
+										'\"');
+
 					}
 					if (n % 3 == 2) {
 						replacerep[replacements++] = matcher.group().substring(
 								1, matcher.group().length() - 1);
 						replacerep[replacements - 1] = replacerep[replacements - 1]
-								.replace("@EMPTYSTRING", "\"\"").replace('\'', '\"');
+								.replace("@EMPTYSTRING", "\"\"").replace('\'',
+										'\"');
 						// System.out.println("Replacement: "+typerep[replacements-1]+" "+searchrep[replacements-1]+" "+replacerep[replacements-1]);
 
 					}
@@ -110,10 +131,57 @@ public class Main {
 				}
 			}
 
+			public void prepareClazzReplacements(String in) {
+				String patternstr = "\"[^\"]*\"";
+				// String patternstr = "*";
+
+				Pattern pattern = Pattern.compile(patternstr);
+				Matcher matcher = pattern.matcher(in);
+				// Check all occurance
+				int n = 0;
+				//System.out.println("PRECLAZZ: "+in);
+				
+				while (matcher.find()) {
+					if (n % 4 == 0) {
+						clazztyperep[clazzreplacements] = matcher.group().substring(1,
+								matcher.group().length() - 1);
+					//	System.out.println("PRECLAZZ: "+clazztyperep[clazzreplacements]);
+					}
+					if (n % 4 == 1) {
+						clazzsearchrep[clazzreplacements] = matcher.group().substring(1,
+								matcher.group().length() - 1);
+						clazzsearchrep[clazzreplacements] = clazzsearchrep[clazzreplacements]
+								.replace("@EMPTYSTRING", "\"\"").replace('\'',
+										'\"');
+					//	System.out.println("PRECLAZZ: "+clazzsearchrep[clazzreplacements]);
+						
+					}
+					if (n % 4 == 2) {
+						clazzreplacerep[clazzreplacements] = matcher.group().substring(
+								1, matcher.group().length() - 1);
+						clazzreplacerep[clazzreplacements] = clazzreplacerep[clazzreplacements]
+								.replace("@EMPTYSTRING", "\"\"").replace('\'',
+										'\"');
+					//	System.out.println("PRECLAZZ: "+clazzreplacerep[clazzreplacements]);
+						
+					}
+					if (n % 4 == 3) {
+						clazzvaluerep[clazzreplacements++] = matcher.group().substring(
+								1, matcher.group().length() - 1);
+						clazzvaluerep[clazzreplacements - 1] = clazzvaluerep[clazzreplacements - 1]
+								.replace("@EMPTYSTRING", "\"\"").replace('\'',
+										'\"');
+					//	System.out.println("PRECLAZZ: "+clazzvaluerep[clazzreplacements-1]);
+						
+					}
+					n++;
+				}
+			}
 			public void endVisit(MethodDeclaration node) {
 				if (replacevalues != null) {
 					prepareReplacements(replacevalues);
 				}
+				
 				String retv = "void";
 				if (node.getReturnType2() != null)
 					retv = node.getReturnType2().toString();
@@ -178,11 +246,14 @@ public class Main {
 
 			public boolean visit(SingleMemberAnnotation node) {
 				if (node.getTypeName().toString()
-						.equals("SearchAndReplaceAnnotation")) {
-					// System.out.println("Anno:"+
-					// " "+node.getAST().toString());
-
+						.equals("MethodDefinitionChangerAnnotation")) {
+				
 					replacevalues = node.getValue().toString();
+				}
+				if (node.getTypeName().toString()
+						.equals("ClazzModifierAnnotation") && clazzvalues== null) {
+				
+					clazzvalues = node.getValue().toString();
 				}
 				return true;
 			}
@@ -211,9 +282,16 @@ public class Main {
 				return true;
 			}
 
+			public void endVisit(TypeDeclaration node) {
+				if (clazzvalues != null) {
+					prepareClazzReplacements(clazzvalues);
+				}
+				clazzModification(clazz); 
+			}
+			
 			public boolean visit(TypeDeclaration node) {
 				clazz.name = node.getName().toString();
-
+				
 				if (node.getSuperclassType() != null)
 					clazz.setSuperClazz(node.getSuperclassType().toString());
 
@@ -251,7 +329,9 @@ public class Main {
 							type += "[]";
 							name = name.substring(0, name.length() - 2);
 						}
-						clazz.addField(name, type, value, sta, isfinal);
+						clazz.addField(replace("FN", name),
+								replace("FT", type), replace("FV", value), sta,
+								isfinal);
 					}
 				}
 				return true;
@@ -292,7 +372,7 @@ public class Main {
 		if (clazz.name == null)
 			return;
 
-		File fh = new File(dir + "/src/" + clazz.name.toLowerCase() + ".h");
+		File fh = new File(dir + "/include/" + clazz.name.toLowerCase() + ".h");
 		FileWriter hw = new FileWriter(fh);
 		hw.write(clazz.toString());
 		hw.close();
@@ -312,16 +392,15 @@ public class Main {
 		p = Runtime.getRuntime().exec("mkdir -p " + args[0] + "/include");
 		p.waitFor();
 
-		
 		System.out.println("Folders created: " + args[0] + "/src" + " & "
 				+ args[0] + "/include");
 
-		p = Runtime.getRuntime().exec("cp helper/os.h " + args[0] + "/src");
+		p = Runtime.getRuntime().exec("cp helper/os.h " + args[0] + "/include");
 		p.waitFor();
-		
+
 		p = Runtime.getRuntime().exec("cp helper/os.cpp " + args[0] + "/src");
 		p.waitFor();
-		
+
 		for (int i = 1; i < args.length; i++) {
 			try {
 				ParseFile(args[0], args[i]);
@@ -332,20 +411,27 @@ public class Main {
 
 		}
 
-		File fa = new File(args[0] + "/src/all.h");
+		File fa = new File(args[0] + "/include/all.h");
 		FileWriter aw = new FileWriter(fa);
+
+		aw.write("#ifndef _ALL_\n#define _ALL_\n\n");
 
 		for (int i = 1; i < args.length; i++) {
 			String file = args[i].replace(".java", "").toLowerCase();
 			file = file.substring(file.lastIndexOf("/") + 1);
-			if(file.contains("annotation"))
+			if (file.contains("annotation"))
 				continue;
-			aw.write("#include \""+file+".h\"\n");
+			aw.write("#include \"" + file + ".h\"\n");
 		}
 		aw.write("#include \"os.h\"\n\n");
+		aw.write("#include <stdio.h>\n");
+		aw.write("#include <string.h>\n");
+
 		aw.write("#define min(X,Y) ((X) < (Y) ? (X) : (Y))\n");
-		aw.write("#define PI "+Math.PI+"\n");
-		
+		aw.write("#define PI " + Math.PI + "\n");
+		aw.write("extern unsigned char* tmptextbuffer;\n");
+		aw.write("#endif\n\n");
+
 		aw.close();
 
 		File fm = new File(args[0] + "/Makefile");
@@ -356,16 +442,21 @@ public class Main {
 		for (int i = 1; i < args.length; i++) {
 			String file = args[i].replace(".java", "").toLowerCase();
 			file = file.substring(file.lastIndexOf("/") + 1);
+			if (file.contains("annotation"))
+				continue;
 			mw.write("\tbuild/${DISTDIR}/" + file + ".o \\\n");
 		}
+		mw.write("\tbuild/${DISTDIR}/os.o \\\n");
 
-		mw.write("\nifeq ($(TARGET), Darwin)\n\tCC=gcc\n\tCFLAGS =  -O2 -c -fno-common -pipe  ${INCLUDE} -D${TARGET} -DMACOSX\n\tTARGETOBJECTFILES= ${OBJECTFILES} \n\tLDFLAGS=-dynamiclib -fno-common -O2 -pipe -flat_namespace -undefined\n\tLIBNAME=tatanka.lib\n\tLDDISTDIR=/Users/esiemes/Library/Java/Extensions\nendif\n");
+		mw.write("\nifeq ($(TARGET), Darwin)\n\tCC=g++\n\tCFLAGS =  -O2 -c -fno-common -pipe  ${INCLUDE} -D${TARGET} -DMACOSX\n\tTARGETOBJECTFILES= ${OBJECTFILES} \n\tLDFLAGS=-dynamiclib -fno-common -O2 -pipe -flat_namespace\n\tLIBNAME=tatanka.lib\n\tLDDISTDIR=build/${DISTDIR}\nendif\n");
 		mw.write("\nifeq ($(TARGET),Linux)\n\tCC=g++\n\tCFLAGS = -Wall ${INCLUDE} -D${TARGET} -c $(DEBUG) -m32 -shared -fPIC -MMD -MP \n\tTARGETOBJECTFILES= ${OBJECTFILES}\n\tLDFLAGS=-shared -m32 -lc -lgcc -lstdc++ -lm\n\tLDDISTDIR=build/${DISTDIR}\n\tLIBNAME=libtatanka.so\nendif\n");
 		mw.write("\nbuild/tatanka: ${TARGETOBJECTFILES} \n\t${MKDIR} -p build/${DISTDIR} ${LDDISTDIR}\n\t${LD} -fPIC -Wl -o ${LDDISTDIR}/${LIBNAME} $(LDFLAGS) ${OBJECTFILES} ${LDLIBSOPTIONS} \nifeq ($(TARGET), Darwin)\n\t$(CP) ${LDDISTDIR}/${LIBNAME} dist/${TARGET}/${LIBNAME}\nendif\n\n");
 
 		for (int i = 1; i < args.length; i++) {
 			String file = args[i].replace(".java", "").toLowerCase();
 			file = file.substring(file.lastIndexOf("/") + 1);
+			if (file.contains("annotation"))
+				continue;
 			mw.write("build/${DISTDIR}/"
 					+ file
 					+ ".o: src/"
@@ -373,8 +464,15 @@ public class Main {
 					+ ".cpp\n\t${MKDIR} -p build/${DISTDIR}\n\t$(CC) -I${INCLUDE} ${CFLAGS} -o build/${DISTDIR}/"
 					+ file + ".o src/" + file + ".cpp\n\n");
 		}
+		mw.write("build/${DISTDIR}/"
+				+ "os"
+				+ ".o: src/"
+				+ "os"
+				+ ".cpp\n\t${MKDIR} -p build/${DISTDIR}\n\t$(CC) -I${INCLUDE} ${CFLAGS} -o build/${DISTDIR}/"
+				+ "os" + ".o src/" + "os" + ".cpp\n\n");
 
 		mw.write("clean:\n\t${RM} -rf build/${DISTDIR}/* build\n\n");
+
 		mw.close();
 
 	}
