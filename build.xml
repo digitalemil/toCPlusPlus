@@ -72,7 +72,7 @@
 	<!-- =================================================================== -->
 	<target name="j2c++" depends="jar">
 	    <exec executable="helper/run.sh">
-			<arg value="/Users/digitalemil/tmp/c1tatanka"/>
+			<arg value="/Users/esiemes/tmp/c1tatanka"/>
 			<arg value="../tatanka/src/main/java/de/digitalemil/eagle/**.java" />
 			<arg value="../tatanka/src/main/java/de/digitalemil/tatanka/**.java" />	
 		</exec>

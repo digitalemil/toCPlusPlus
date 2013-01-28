@@ -75,7 +75,7 @@ public class Method {
 					ret = ret.substring(0, i) + "::" + ret.substring(i + 1);
 					break;
 				}
-				if (!Character.isJavaIdentifierPart(ret.charAt(j)))
+				if (!Character.isJavaIdentifierPart(ret.charAt(j)) &&ret.charAt(j)!= '%')
 					break;
 			}
 
@@ -95,7 +95,11 @@ public class Method {
 		}
 		String b = ret.toString();
 		b = b.replaceAll("super\\(", "//super(");
-		b = b.replaceAll("super.", clazz.superClazz + "::");
+		if(clazz.superClazz!= null)
+			b = b.replaceAll("super.", clazz.superClazz + "::");
+		else
+			b = b.replaceAll("super.", "//super.");
+		
 		b = b.replaceAll("String\\[\\]", ToCPlusPlusClazz.STRINGTYPE + "*");
 		b = b.replaceAll("String", ToCPlusPlusClazz.STRINGTYPE);
 		b = b.replaceAll("Types\\.", "Types::");

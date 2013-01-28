@@ -115,7 +115,7 @@ public class Main {
 								matcher.group().length() - 1);
 						searchrep[replacements] = searchrep[replacements]
 								.replace("@EMPTYSTRING", "\"\"").replace('\'',
-										'\"');
+										'\"').replace("@DOT", ".");
 
 					}
 					if (n % 3 == 2) {
@@ -123,7 +123,8 @@ public class Main {
 								1, matcher.group().length() - 1);
 						replacerep[replacements - 1] = replacerep[replacements - 1]
 								.replace("@EMPTYSTRING", "\"\"").replace('\'',
-										'\"');
+										'\"').replace("@DOT", ".");
+						
 						// System.out.println("Replacement: "+typerep[replacements-1]+" "+searchrep[replacements-1]+" "+replacerep[replacements-1]);
 
 					}
@@ -152,7 +153,7 @@ public class Main {
 								matcher.group().length() - 1);
 						clazzsearchrep[clazzreplacements] = clazzsearchrep[clazzreplacements]
 								.replace("@EMPTYSTRING", "\"\"").replace('\'',
-										'\"');
+										'\"').replace("@DOT", ".");
 					//	System.out.println("PRECLAZZ: "+clazzsearchrep[clazzreplacements]);
 						
 					}
@@ -161,7 +162,7 @@ public class Main {
 								1, matcher.group().length() - 1);
 						clazzreplacerep[clazzreplacements] = clazzreplacerep[clazzreplacements]
 								.replace("@EMPTYSTRING", "\"\"").replace('\'',
-										'\"');
+										'\"').replace("@DOT", ".");
 					//	System.out.println("PRECLAZZ: "+clazzreplacerep[clazzreplacements]);
 						
 					}
@@ -170,7 +171,7 @@ public class Main {
 								1, matcher.group().length() - 1);
 						clazzvaluerep[clazzreplacements - 1] = clazzvaluerep[clazzreplacements - 1]
 								.replace("@EMPTYSTRING", "\"\"").replace('\'',
-										'\"');
+										'\"').replace("@DOT", ".");
 					//	System.out.println("PRECLAZZ: "+clazzvaluerep[clazzreplacements-1]);
 						
 					}
